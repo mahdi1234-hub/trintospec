@@ -10,8 +10,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY || "";
 
-// Serve static files (index.html, index.css, streaming.js)
-app.use(express.static(path.join(__dirname)));
+// Serve static files with correct MIME types
+app.use(
+    express.static(path.join(__dirname, "public"), {
+        setHeaders: (res, filePath) => {
+            if (filePath.endsWith(".js")) {
+                res.setHeader("Content-Type", "application/javascript");
+            }
+        },
+    })
+);
 
 // Tavily API proxy endpoint
 app.get("/api/tavily", async (req, res) => {
@@ -20,7 +28,6 @@ app.get("/api/tavily", async (req, res) => {
             return res.json({ results: [], error: "No Tavily API key configured" });
         }
 
-        // Search for multiple categories of Tunisia solar panel market data
         const queries = [
             "Tunisia solar panel prices 2025 market TND",
             "Tunisia solar energy news latest developments",
@@ -29,7 +36,6 @@ app.get("/api/tavily", async (req, res) => {
             "solar panel new release Tunisia market",
         ];
 
-        // Pick a random query each time to get varied results
         const query = queries[Math.floor(Math.random() * queries.length)];
 
         const response = await fetch("https://api.tavily.com/search", {
@@ -63,6 +69,11 @@ app.get("/api/tavily", async (req, res) => {
         console.error("Tavily proxy error:", error.message);
         res.json({ results: [], error: error.message });
     }
+});
+
+// Catch-all: serve index.html for root
+app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 app.listen(PORT, () => {
